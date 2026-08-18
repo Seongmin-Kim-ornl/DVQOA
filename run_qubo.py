@@ -10,8 +10,6 @@ import warnings
 
 from vqoa import VQOA
 from load_QUBO import load_QUBO
-from TMM_calculation import cal_FOM_TMM
-from OD_calculation import cal_FOM_RCWA
 
 warnings.simplefilter("ignore")
 
