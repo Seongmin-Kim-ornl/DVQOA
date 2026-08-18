@@ -27,8 +27,6 @@ optimizer.py         MPIParallelOptimizer — shared "run N independent
                      only imported lazily, inside this module, so serial
                      runs need no MPI install at all.
 load_QUBO.py         QUBO matrix loader (--cost qubo).
-TMM_calculation.py   Transparent radiative cooler FOM (--cost tmm).
-OD_calculation.py    Optical-diode grating FOM via RCWA (--cost rcwa).
 ```
 
 ## Requirements
@@ -42,8 +40,6 @@ OD_calculation.py    Optical-diode grating FOM via RCWA (--cost rcwa).
 
 ```bash
 pip install numpy scipy qiskit qiskit-aer pandas mpi4py
-pip install tmm_fast   # only if you use --cost tmm
-pip install meent      # only if you use --cost rcwa
 ```
 
 ## Input data
@@ -53,8 +49,7 @@ Cost functions read from a data directory, `../Examples` by default
 `python run_qubo.py`, i.e. one level above wherever you run it from):
 
 - `QUBO_{N}.txt` — QUBO matrix for an N-qubit problem (`--cost qubo`)
-- `solar_spectrum.txt`, `dielectric_ref.txt` — TMM material/target data (`--cost tmm`)
-- `--cost rcwa` needs no data files (self-contained).
+
 
 ## Usage
 
