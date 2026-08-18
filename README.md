@@ -1,10 +1,9 @@
 # DVQOA — Distributed Variational Quantum Optimization Algorithm
 
-Circuit-cutting variational quantum optimization for QUBO, transparent
-radiative cooler (TMM), and optical-diode grating (RCWA) design problems,
+Circuit-cutting variational quantum optimization for QUBO, and materials design problems,
 with optional MPI parallelism.
 
-`run_qubo.py` is the entry point for all three cost functions.
+`run_qubo.py` is the entry point for the cost functions.
 
 ## How it works
 
