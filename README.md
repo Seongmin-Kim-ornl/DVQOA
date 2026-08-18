@@ -11,7 +11,7 @@ A `num_qubits`-qubit design problem is split into `num_cutting` independent
 sub-circuits, each a shallow hardware-efficient ansatz (Hadamard + repeated
 parameterized `Ry` layers). Each sub-circuit is measured and its most likely
 bitstring becomes a slice of the design vector. The assembled design vector
-is scored by the chosen cost function (QUBO energy, TMM, or RCWA), and
+is scored by the chosen cost function (QUBO energy), and
 [COBYLA](https://docs.scipy.org/doc/scipy/reference/optimize.minimize-neldermead.html)
 tunes the ansatz parameters to minimize it. This is all implemented once, in
 the `VQOA` class (`vqoa.py`) — `run_qubo.py` just configures and calls it.
@@ -33,8 +33,7 @@ load_QUBO.py         QUBO matrix loader (--cost qubo).
 - Python 3.9+
 - `numpy`, `scipy`
 - `qiskit`, `qiskit-aer`
-- `pandas`, [`tmm_fast`](https://github.com/MLResearchAtOSRAM/tmm_fast) — only for `--cost tmm`
-- [`meent`](https://github.com/kc-ml2/meent) — only for `--cost rcwa`
+- `pandas`
 - `mpi4py` — **optional**, only needed when passing `--mpi`
 
 ```bash
@@ -60,7 +59,7 @@ python run_qubo.py --cost qubo --num-qubits 20
 
 Useful flags (all optional, see `python run_qubo.py --help`):
 
-- `--cost {qubo,tmm,rcwa}` — design problem to optimize (default: `qubo`)
+- `--cost {qubo}` — design problem to optimize (default: `qubo`)
 - `--num-qubits N` — problem size; for `--cost qubo` must match an existing `QUBO_{N}.txt`
 - `--num-cutting K` — number of sub-circuits; must evenly divide `--num-qubits`
   (default: `num_qubits // 10`, min 1 — override this if it doesn't divide evenly,
