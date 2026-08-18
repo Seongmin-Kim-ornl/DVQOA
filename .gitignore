@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-.DS_Store
-
-# Kept locally for reference only; not part of the published package.
-legacy/
-
-# Input data is distributed separately, not committed here.
-Examples/
