@@ -11,7 +11,7 @@ def load_QUBO(num_qubits: int) -> np.matrix:
     Expects a whitespace-delimited file at ``../Examples/QUBO_{num_qubits}.txt``
     containing num_qubits * num_qubits numerical values (row-major).
     """
-    file_path = os.path.join("..", "Examples", f"QUBO_{num_qubits}.txt")
+    file_path = os.path.join(".", "Examples", f"QUBO_{num_qubits}.txt")
     with open(file_path, "r") as file:
         Q = np.loadtxt(file)
 

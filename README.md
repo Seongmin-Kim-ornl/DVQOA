@@ -1,139 +1,112 @@
 # DVQOA — Distributed Variational Quantum Optimization Algorithm
 
-Circuit-cutting variational quantum optimization for combinatorial design
-problems (QUBO, higher-order polynomial energies, and physical inverse-design
-problems such as transparent radiative coolers and optical-diode gratings),
-with an optional classical neural-network baseline and optional MPI
-parallelism.
+Circuit-cutting variational quantum optimization for QUBO, transparent
+radiative cooler (TMM), and optical-diode grating (RCWA) design problems,
+with optional MPI parallelism.
+
+`run_qubo.py` is the entry point for all three cost functions.
 
 ## How it works
 
 A `num_qubits`-qubit design problem is split into `num_cutting` independent
 sub-circuits, each a shallow hardware-efficient ansatz (Hadamard + repeated
-parameterized `Ry` layers). Each sub-circuit's output is turned into one or
-more design digits by a **readout strategy**:
-
-- **Binary** (`SamplingReadout`) — measure the sub-circuit and keep the most
-  likely bitstring. Any number of qubits per sub-circuit.
-- **N-ary** (`LabelStateReadout`) — classify a single qubit's final
-  statevector by nearest reference ("label") state, giving a ternary,
-  quaternary, etc. digit. Requires exactly one qubit per sub-circuit.
-
-The assembled design vector is scored by a cost function (QUBO energy,
-higher-order polynomial energy, or a physics simulation), and
+parameterized `Ry` layers). Each sub-circuit is measured and its most likely
+bitstring becomes a slice of the design vector. The assembled design vector
+is scored by the chosen cost function (QUBO energy, TMM, or RCWA), and
 [COBYLA](https://docs.scipy.org/doc/scipy/reference/optimize.minimize-neldermead.html)
-tunes the ansatz parameters to minimize it. Everything above is implemented
-once, in the `VQOA` class — running serially, running many independent
-restarts under MPI, and switching between binary/ternary/quaternary
-encoding are all just constructor arguments, not separate scripts.
+tunes the ansatz parameters to minimize it. This is all implemented once, in
+the `VQOA` class (`vqoa.py`) — `run_qubo.py` just configures and calls it.
 
-A classical baseline, `DDNN`, trains a small feedforward network to directly
-output a relaxed design vector minimizing the same kind of energy loss, for
-comparison against the quantum approach.
-
-## Repository layout
+## Files needed for `run_qubo.py`
 
 ```
-optimizer.py    MPIParallelOptimizer — shared "run N independent restarts,
-                keep the global best" base class. mpi4py is only imported
-                lazily, inside this module, so serial use needs no MPI
-                install at all.
-interactions.py Loading/evaluating higher-order polynomial interaction
-                terms (shared by the higher-order, n-ary, and DDNN cost
-                functions).
-vqoa.py         The VQOA optimizer class, plus the SamplingReadout /
-                LabelStateReadout readout strategies and the TERNARY_LABELS
-                / QUATERNARY_LABELS reference states.
-ddnn.py         The DDNN classical-NN baseline class.
-
-load_QUBO.py                   QUBO matrix loader.
-TMM_calculation.py             Transparent radiative cooler FOM (2-bit /
-                                4-material layer encoding), via tmm_fast.
-TMM_calculation_three_states.py Same, but 1-trit / 3-material encoding.
-OD_calculation.py              Optical-diode grating FOM (RCWA), via meent.
-
-run_qubo.py          Minimize a QUBO / TMM / RCWA cost (--cost qubo|tmm|rcwa).
-run_higher_order.py  Minimize a higher-order polynomial energy, binary encoding.
-run_n_ary.py         Same, but n-ary encoding (--states 3|4).
-run_trc.py           Radiative cooler design, ternary encoding.
-run_ddnn.py          Classical DDNN baseline.
-
-legacy/         Original, single-purpose per-problem scripts, kept for
-                reference. Not maintained — use the run_*.py scripts above.
+run_qubo.py         Entry point / CLI.
+vqoa.py              The VQOA optimizer class.
+optimizer.py         MPIParallelOptimizer — shared "run N independent
+                     restarts, keep the global best" base class. mpi4py is
+                     only imported lazily, inside this module, so serial
+                     runs need no MPI install at all.
+load_QUBO.py         QUBO matrix loader (--cost qubo).
+TMM_calculation.py   Transparent radiative cooler FOM (--cost tmm).
+OD_calculation.py    Optical-diode grating FOM via RCWA (--cost rcwa).
 ```
 
 ## Requirements
 
 - Python 3.9+
 - `numpy`, `scipy`
-- `qiskit`, `qiskit-aer` (all `run_*.py` scripts except `run_ddnn.py`)
-- `pandas`, [`tmm_fast`](https://github.com/MLResearchAtOSRAM/tmm_fast) (`run_qubo.py --cost tmm`, `run_trc.py`)
-- [`meent`](https://github.com/kc-ml2/meent) (`run_qubo.py --cost rcwa`)
-- `torch` (`run_ddnn.py`)
+- `qiskit`, `qiskit-aer`
+- `pandas`, [`tmm_fast`](https://github.com/MLResearchAtOSRAM/tmm_fast) — only for `--cost tmm`
+- [`meent`](https://github.com/kc-ml2/meent) — only for `--cost rcwa`
 - `mpi4py` — **optional**, only needed when passing `--mpi`
 
 ```bash
-pip install numpy scipy qiskit qiskit-aer pandas torch mpi4py
-pip install tmm_fast meent  # only if you need those specific cost functions
+pip install numpy scipy qiskit qiskit-aer pandas mpi4py
+pip install tmm_fast   # only if you use --cost tmm
+pip install meent      # only if you use --cost rcwa
 ```
 
 ## Input data
 
-The cost functions expect a sibling `Examples/` directory (i.e. `../Examples`
-relative to this repo) containing:
+Cost functions read from a data directory, `../Examples` by default
+(resolved relative to your current working directory when you launch
+`python run_qubo.py`, i.e. one level above wherever you run it from):
 
-- `QUBO_{N}.txt` — QUBO matrix for an N-qubit problem (`run_qubo.py --cost qubo`)
-- `Size{N}_Order{M}.txt` — higher-order interaction terms, one
-  `var_1,...,var_k,coefficient` line per term, 1-based indices
-  (`run_higher_order.py`, `run_n_ary.py`, `run_ddnn.py`)
-- `solar_spectrum.txt`, `dielectric_ref.txt` — TMM material/target data
-  (`run_qubo.py --cost tmm`, `run_trc.py`)
-
-Check which `N`/`M` a given run script expects at the top of that script
-(e.g. `run_n_ary.py --states 4` expects `Size14_Order2.txt`) before running
-it, and generate/add the corresponding file if it's missing.
+- `QUBO_{N}.txt` — QUBO matrix for an N-qubit problem (`--cost qubo`)
+- `solar_spectrum.txt`, `dielectric_ref.txt` — TMM material/target data (`--cost tmm`)
+- `--cost rcwa` needs no data files (self-contained).
 
 ## Usage
 
 Serial:
 
 ```bash
-python run_qubo.py --cost qubo
-python run_higher_order.py
-python run_n_ary.py --states 3
-python run_trc.py
-python run_ddnn.py
+python run_qubo.py --cost qubo --num-qubits 20
 ```
+
+Useful flags (all optional, see `python run_qubo.py --help`):
+
+- `--cost {qubo,tmm,rcwa}` — design problem to optimize (default: `qubo`)
+- `--num-qubits N` — problem size; for `--cost qubo` must match an existing `QUBO_{N}.txt`
+- `--num-cutting K` — number of sub-circuits; must evenly divide `--num-qubits`
+  (default: `num_qubits // 10`, min 1 — override this if it doesn't divide evenly,
+  e.g. `--num-qubits 32 --num-cutting 4`)
+- `--num-layers`, `--num-repeats`, `--max-iter` — ansatz/optimizer sizing
 
 MPI (rank 0 aggregates; ranks 1..N-1 each run one independent restart, so
 launch with at least 2 processes):
 
 ```bash
-mpiexec -n 5 python run_qubo.py --cost qubo --mpi
-mpiexec -n 5 python run_n_ary.py --states 4 --mpi --save-prefix results/n_ary_4
+mpiexec -n 5 python run_qubo.py --cost qubo --num-qubits 20 --mpi
+# or, on a Slurm-managed cluster:
+srun -n 5 python run_qubo.py --cost qubo --num-qubits 20 --mpi
 ```
 
-`--save-prefix` (MPI mode only) writes the aggregated best result to
-`<prefix>.txt` and the winning worker's full loss trace to
-`<prefix>_lossdata.txt`.
+`srun` works as a drop-in replacement for `mpiexec` — `mpi4py` picks up
+rank/size from the MPI runtime, not from the launch command. Add
+`--save-prefix results/run1` (MPI mode only) to write the aggregated best
+result to `results/run1.txt` and the winning worker's full loss trace to
+`results/run1_lossdata.txt`.
 
 ## Using VQOA programmatically
 
 ```python
-from vqoa import VQOA, LabelStateReadout, TERNARY_LABELS
-from interactions import load_interactions, higher_order_energy
+from vqoa import VQOA
+from load_QUBO import load_QUBO
 
-interactions = load_interactions(num_qubits=10, max_order=3)
+Q = load_QUBO(num_qubits=20)
 
 vqoa = VQOA(
-    num_qubits=10,
-    cost_function=lambda design: higher_order_energy(design, interactions),
-    readout=LabelStateReadout(TERNARY_LABELS),  # omit for binary sampling
-    num_layers=3,
-    num_repeats=3,
-    max_iter=5000,
-    use_mpi=False,  # set True + run under mpiexec to parallelize restarts
+    num_qubits=20,
+    cost_function=lambda design: float(design @ Q @ design.T),
+    num_layers=5,
+    num_repeats=5,
+    max_iter=1000,
+    use_mpi=False,  # set True + run under mpiexec/srun to parallelize restarts
 )
 result = vqoa.run()
 print(result.loss, result.design)
 ```
+
+## Citation
+`Kim, S., Suh, IS. Advancing scientific discovery and complex optimization through distributed quantum neural networks. npj Comput Mater (2026). https://doi.org/10.1038/s41524-026-02203-w`
