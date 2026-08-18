@@ -137,3 +137,7 @@ vqoa = VQOA(
 result = vqoa.run()
 print(result.loss, result.design)
 ```
+
+## Citation
+`Kim, S., Suh, IS. Advancing scientific discovery and complex optimization through distributed quantum neural networks. npj Comput Mater (2026). https://doi.org/10.1038/s41524-026-02203-w`
+
