@@ -42,9 +42,9 @@ pip install numpy scipy qiskit qiskit-aer pandas mpi4py
 
 ## Input data
 
-Cost functions read from a data directory, `../Examples` by default
+Cost functions read from an `Examples/` directory next to the scripts
 (resolved relative to your current working directory when you launch
-`python run_qubo.py`, i.e. one level above wherever you run it from):
+`python run_qubo.py`):
 
 - `QUBO_{N}.txt` — QUBO matrix for an N-qubit problem (`--cost qubo`)
 
